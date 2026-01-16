@@ -110,8 +110,29 @@ class UploadResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    """ヘルスチェック"""
+    """フロントエンドのindex.htmlを返す"""
+    index_path = Path(__file__).parent.parent / "frontend" / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path, media_type="text/html")
     return {"status": "ok", "message": "KdB Assistant API v2.0 is running"}
+
+
+@app.get("/style.css")
+async def serve_css():
+    """CSSファイルを返す"""
+    css_path = Path(__file__).parent.parent / "frontend" / "style.css"
+    if css_path.exists():
+        return FileResponse(css_path, media_type="text/css")
+    raise HTTPException(status_code=404, detail="CSS not found")
+
+
+@app.get("/app.js")
+async def serve_js():
+    """JSファイルを返す"""
+    js_path = Path(__file__).parent.parent / "frontend" / "app.js"
+    if js_path.exists():
+        return FileResponse(js_path, media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="JS not found")
 
 
 @app.get("/categories")
@@ -501,23 +522,10 @@ async def get_stats():
     }
 
 
-# ========== フロントエンド配信（本番用） ==========
-
-# フロントエンドディレクトリのパス
+# ========== 静的ファイル配信（本番用） ==========
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
-
-# index.html を返すルート
-@app.get("/")
-async def serve_index():
-    """フロントエンドのindex.htmlを返す"""
-    index_path = FRONTEND_DIR / "index.html"
-    if index_path.exists():
-        return FileResponse(index_path)
-    return {"status": "ok", "message": "KdB Assistant API v2.0 is running"}
-
-# 静的ファイル配信（CSS, JS）
 if FRONTEND_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 if __name__ == "__main__":
