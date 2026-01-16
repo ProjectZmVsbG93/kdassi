@@ -367,8 +367,11 @@ def build_vector_db_from_xlsx(syllabi: list[dict], session_id: str = "default") 
     start_time = time.time()
     print(f"Building in-memory DB for session {session_id} with {len(syllabi)} courses")
     
-    # インメモリChromaDB（デフォルトのエンベディング関数を無効化）
-    client = chromadb.Client()
+    # インメモリChromaDB（テレメトリ無効化）
+    client = chromadb.Client(Settings(
+        anonymized_telemetry=False,
+        allow_reset=True
+    ))
     
     # 既存のコレクションがあれば削除
     collection_name = f"syllabi_{session_id}"
