@@ -1,0 +1,13 @@
+# Render Blueprint for KdB Assistant
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: kdb-assistant
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+    healthCheckPath: /categories

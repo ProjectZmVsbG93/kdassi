@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KdB Assistant - 筑波大学履修相談AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- アップロード画面 -->
+        <div class="upload-screen" id="upload-screen">
+            <div class="upload-container">
+                <div class="upload-header">
+                    <span class="logo-icon">🎓</span>
+                    <h1>KdB Assistant</h1>
+                    <p>筑波大学 履修相談AI</p>
+                </div>
+
+                <div class="upload-box" id="upload-box">
+                    <div class="upload-icon">📁</div>
+                    <h2>シラバスデータをアップロード</h2>
+                    <p>.xlsxファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
+                    <input type="file" id="file-input" accept=".xlsx,.xls" hidden>
+                    <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+                        ファイルを選択
+                    </button>
+                </div>
+
+                <div class="upload-progress" id="upload-progress" style="display: none;">
+                    <div class="progress-spinner"></div>
+                    <p id="progress-text">アップロード中...</p>
+                </div>
+
+                <div class="upload-info">
+                    <h3>📋 使い方</h3>
+                    <ol>
+                        <li><a href="https://kdb.tsukuba.ac.jp/" target="_blank">KdB</a>にログインしてシラバス検索画面へ</li>
+                        <li>検索結果をXLSX形式でエクスポート</li>
+                        <li>ここにアップロードして履修相談開始！</li>
+                    </ol>
+                    <p class="note">※ アップロードしたデータはサーバーに保存されません</p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- チャット画面（初期は非表示） -->
+        <div class="chat-screen" id="chat-screen" style="display: none;">
+            <!-- オーバーレイ -->
+            <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+            <!-- サイドバー -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <span class="logo-icon">🎓</span>
+                        <h1>KdB Assistant</h1>
+                    </div>
+                    <p class="logo-subtitle">筑波大学 履修相談AI</p>
+                </div>
+
+                <!-- スクロール可能なコンテンツ -->
+                <div class="sidebar-content">
+                    <!-- 使用状況（上部） -->
+                    <div class="usage-section">
+                        <div class="session-info" id="session-info">
+                            <span class="stat-item">📚 <span id="course-count">0</span>件の科目を読み込み済み</span>
+                        </div>
+                        <div class="rate-limit-status" id="rate-limit-status" style="display: none;">
+                            <div class="rate-limit-info">
+                                <span class="rate-limit-count">本日: <span id="daily-count">0</span>/5回</span>
+                                <span class="rate-limit-timer" id="cooldown-timer"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- フィルター -->
+                    <div class="filter-section">
+                        <h2>🔍 検索フィルター</h2>
+                        <p class="filter-hint">任意で絞り込み条件を設定</p>
+
+                        <div class="filter-group">
+                            <label for="filter-category">学群</label>
+                            <select id="filter-category">
+                                <option value="">すべて</option>
+                                <optgroup label="学群">
+                                    <option value="人文・文化学群">人文・文化学群</option>
+                                    <option value="社会・国際学群">社会・国際学群</option>
+                                    <option value="人間学群">人間学群</option>
+                                    <option value="生命環境学群">生命環境学群</option>
+                                    <option value="理工学群">理工学群</option>
+                                    <option value="情報学群">情報学群</option>
+                                    <option value="医学群">医学群</option>
+                                    <option value="体育専門学群">体育専門学群</option>
+                                    <option value="芸術専門学群">芸術専門学群</option>
+                                </optgroup>
+                                <optgroup label="大学院">
+                                    <option value="0A">大学院</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filter-year">年次</label>
+                            <select id="filter-year">
+                                <option value="">すべて</option>
+                                <option value="1">1年次</option>
+                                <option value="2">2年次</option>
+                                <option value="3">3年次</option>
+                                <option value="4">4年次</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filter-course-type">科目種類</label>
+                            <select id="filter-course-type">
+                                <option value="">すべて</option>
+                                <option value="specialized">専門科目のみ</option>
+                                <option value="common">共通科目・外国語のみ</option>
+                            </select>
+                        </div>
+
+                        <p class="filter-note">💡 専門科目のみ: 共通科目を除外</p>
+                    </div>
+
+                    <!-- 設定セクション -->
+                    <div class="settings-section">
+                        <h2>⚙️ 設定</h2>
+                        <div class="setting-group">
+                            <label for="api-key-input">Gemini API キー</label>
+                            <div class="api-key-wrapper">
+                                <input type="password" id="api-key-input" placeholder="API キーを入力...">
+                                <button type="button" class="toggle-visibility-btn" onclick="toggleApiKeyVisibility()"
+                                    title="表示/非表示">
+                                    👁️
+                                </button>
+                            </div>
+                            <button class="save-api-key-btn" onclick="saveApiKey()">💾 保存</button>
+                            <button class="delete-api-key-btn" onclick="deleteApiKey()">🗑️ 削除</button>
+                            <p class="setting-note">※ ブラウザに保存されます</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- フッター（固定） -->
+                <div class="sidebar-footer">
+                    <button class="reset-btn" onclick="resetSession()">🔄 別のファイルをアップロード</button>
+                    <p class="disclaimer">
+                        ※ 最新の情報は必ず<a href="https://kdb.tsukuba.ac.jp/" target="_blank">KdB</a>で確認してください
+                    </p>
+                </div>
+            </aside>
+
+            <!-- メインコンテンツ -->
+            <main class="main-content">
+                <!-- チャットヘッダー（モバイル用） -->
+                <div class="chat-header">
+                    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" title="メニュー">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="chat-header-title">
+                        <span class="logo-icon">🎓</span>
+                        <span>KdB Assistant</span>
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="welcome-message">
+                            <div class="welcome-icon">🤖</div>
+                            <h2>こんにちは！</h2>
+                            <p>筑波大学の履修相談AIアシスタントです。<br>授業選びに困ったら、何でも質問してください！</p>
+                            <div class="example-questions">
+                                <p>例：</p>
+                                <button class="example-btn" onclick="askExample(this)">プログラミング初心者向けの授業を教えて</button>
+                                <button class="example-btn" onclick="askExample(this)">情報学群の1年生におすすめの科目は？</button>
+                                <button class="example-btn" onclick="askExample(this)">AIや機械学習を学べる授業はある？</button>
+                                <button class="example-btn" onclick="askExample(this)">英語以外の外国語でおすすめは？</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <form id="chat-form" onsubmit="sendMessage(event)">
+                            <div class="input-wrapper">
+                                <textarea id="message-input" placeholder="質問を入力してください..." rows="1"
+                                    onkeydown="handleKeyDown(event)"></textarea>
+                                <button type="submit" id="send-btn" title="送信">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
