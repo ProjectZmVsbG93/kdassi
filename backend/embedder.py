@@ -4,8 +4,13 @@ Embedding & Vector Database Setup
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
+
+# ChromaDBテレメトリを無効化（Renderでのエラー回避）
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+
 import chromadb
 from chromadb.config import Settings
 import google.generativeai as genai
